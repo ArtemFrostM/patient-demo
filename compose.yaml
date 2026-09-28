@@ -1,0 +1,46 @@
+services:
+
+  # PostgreSQL
+  db:
+    image: postgres:16-alpine
+    container_name: patient-demo-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-patient_demo}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      # only local
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    ports:
+      - "${DB_HOST_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-patient_demo}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  # Spring Boot
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: patient-demo-app:local
+    container_name: patient-demo-app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8380
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-patient_demo}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${APP_HOST_PORT:-8380}:8380"
+    restart: on-failure
+
+volumes:
+  pgdata:
+    name: patient-demo-pgdata
