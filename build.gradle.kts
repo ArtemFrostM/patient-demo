@@ -48,6 +48,9 @@ dependencies {
 }
 
 
+// disable for docker
+tasks.named<Jar>("jar") { enabled = false }
+
 tasks.withType<Test> {
     useJUnitPlatform()
     jvmArgs("-Duser.timezone=UTC")
