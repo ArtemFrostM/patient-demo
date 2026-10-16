@@ -41,6 +41,67 @@ services:
       - "${APP_HOST_PORT:-8380}:8380"
     restart: on-failure
 
+  # PostgreSQL for ref-data-service
+  ref-data-db:
+    image: postgres:16-alpine
+    container_name: ref-data-db
+    environment:
+      POSTGRES_DB: ${REF_DATA_DB:-ref_data}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${REF_DATA_DB_HOST_PORT:-5433}:5432"
+    volumes:
+      - refdata-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${REF_DATA_DB:-ref_data}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  # Nakat ref-data schema + seed
+  ref-data-flyway-init:
+    image: flyway/flyway:12.4.0
+    container_name: ref-data-flyway-init
+    depends_on:
+      ref-data-db:
+        condition: service_healthy
+    environment:
+      FLYWAY_URL: jdbc:postgresql://ref-data-db:5432/${REF_DATA_DB:-ref_data}
+      FLYWAY_USER: ${POSTGRES_USER:-postgres}
+      FLYWAY_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      FLYWAY_LOCATIONS: filesystem:/flyway/sql/migration,filesystem:/flyway/sql/seed
+      FLYWAY_CONNECT_RETRIES: 10
+    command: migrate
+    volumes:
+      - ../ref-data-service/src/main/resources/db/migration:/flyway/sql/migration:ro
+      - ../ref-data-service/db/seed:/flyway/sql/seed:ro
+    restart: "no"
+
+  # ref-data-service
+  ref-data-service:
+    build:
+      context: ../ref-data-service
+      dockerfile: Dockerfile
+    image: ref-data-service:local
+    container_name: ref-data-service
+    depends_on:
+      ref-data-flyway-init:
+        condition: service_completed_successfully
+    environment:
+      SERVER_PORT: 8381
+      DB_URL: jdbc:postgresql://ref-data-db:5432/${REF_DATA_DB:-ref_data}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      SPRING_FLYWAY_ENABLED: "false"
+    ports:
+      - "${REF_DATA_APP_HOST_PORT:-8381}:8381"
+    restart: on-failure
+
 volumes:
   pgdata:
     name: patient-demo-pgdata
+  refdata-pgdata:
+    name: ref-data-pgdata
