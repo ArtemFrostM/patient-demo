@@ -32,11 +32,18 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      ref-data-service:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
     environment:
       SERVER_PORT: 8380
       DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-patient_demo}
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      REF_DATA_BASE_URL: http://ref-data-service:8381
+      KEYCLOAK_TOKEN_URI: http://keycloak:8080/realms/patient-demo/protocol/openid-connect/token
+      REF_DATA_CLIENT_SECRET: ${REF_DATA_CLIENT_SECRET}
     ports:
       - "${APP_HOST_PORT:-8380}:8380"
     restart: on-failure
@@ -90,15 +97,33 @@ services:
     depends_on:
       ref-data-flyway-init:
         condition: service_completed_successfully
+      keycloak:
+        condition: service_started
     environment:
       SERVER_PORT: 8381
       DB_URL: jdbc:postgresql://ref-data-db:5432/${REF_DATA_DB:-ref_data}
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       SPRING_FLYWAY_ENABLED: "false"
+      JWK_SET_URI: http://keycloak:8080/realms/patient-demo/protocol/openid-connect/certs
     ports:
       - "${REF_DATA_APP_HOST_PORT:-8381}:8381"
     restart: on-failure
+
+  # Keycloak: issues JWT tokens for service-to-service calls
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8
+    container_name: keycloak
+    # --import-realm: on startup imports every JSON in /opt/keycloak/data/import (skipped if the realm already exists)
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    ports:
+      - "${KEYCLOAK_HOST_PORT:-8180}:8080"
+    volumes:
+      - ./keycloak/patient-demo-realm.json:/opt/keycloak/data/import/patient-demo-realm.json:ro
+    restart: unless-stopped
 
 volumes:
   pgdata:
