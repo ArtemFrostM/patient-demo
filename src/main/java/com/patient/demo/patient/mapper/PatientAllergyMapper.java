@@ -3,17 +3,19 @@ package com.patient.demo.patient.mapper;
 import com.patient.demo.patient.Patient;
 import com.patient.demo.patient.PatientAllergy;
 import com.patient.demo.patient.dto.PatientAllergyCreateRequest;
+import com.patient.demo.patient.dto.PatientAllergyPatchRequest;
 import com.patient.demo.patient.dto.PatientAllergyResponse;
+import com.patient.demo.patient.dto.PatientAllergyUpdateRequest;
 import com.patient.demo.refdata.dto.RefDataAllergy;
 import org.springframework.stereotype.Component;
 
 @Component
 public class PatientAllergyMapper {
 
-    public PatientAllergy toEntity(Patient patient, PatientAllergyCreateRequest request) {
-        PatientAllergy link = new PatientAllergy(patient, request.allergyId());
-        link.setNotes(request.notes());
-        link.setSortOrder(request.sortOrder() == null ? 0 : request.sortOrder());
+    public PatientAllergy toEntity(Patient patient, PatientAllergyCreateRequest item) {
+        PatientAllergy link = new PatientAllergy(patient, item.allergyId());
+        link.setNotes(item.notes());
+        link.setSortOrder(item.sortOrder() == null ? 0 : item.sortOrder());
         return link;
     }
 
@@ -28,5 +30,14 @@ public class PatientAllergyMapper {
                 .updatedAt(link.getUpdatedAt())
                 .updatedBy(link.getUpdatedBy())
                 .build();
+    }
+
+    public void applyUpdate(PatientAllergy link, PatientAllergyUpdateRequest item) {
+        if (item.notes() != null) {
+            link.setNotes(item.notes().isBlank() ? null : item.notes());
+        }
+        if (item.sortOrder() != null) {
+            link.setSortOrder(item.sortOrder());
+        }
     }
 }
