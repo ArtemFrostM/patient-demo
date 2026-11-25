@@ -30,7 +30,6 @@ import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 
 @Service
-@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class PatientAllergyService {
 
@@ -48,7 +47,6 @@ public class PatientAllergyService {
                 .toList();
     }
 
-    @Transactional
     public List<PatientAllergyResponse> addAll(UUID patientId, PatientAllergiesCreateRequest request) {
         Patient patient = requirePatient(patientId);
 
