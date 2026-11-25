@@ -1,8 +1,10 @@
 package com.patient.demo;
 
+import com.patient.demo.refdata.client.RefDataClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * Common base class for every integration test.
@@ -29,5 +31,12 @@ import org.springframework.context.annotation.Import;
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
 public abstract class BaseIntegrationTest {
+
+    /**
+     * No integration test talks to a real ref-data-service. Declared here (not per test) so every
+     * IT keeps sharing one cached context. Mockito resets it after each test.
+     */
+    @MockitoBean
+    protected RefDataClient refDataClient;
 }
 

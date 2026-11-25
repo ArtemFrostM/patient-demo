@@ -1,0 +1,26 @@
+{
+  "realm": "patient-demo",
+  "enabled": true,
+  "clientScopes": [
+    { "name": "allergy:read",  "protocol": "openid-connect", "attributes": { "include.in.token.scope": "true" } },
+    { "name": "allergy:write", "protocol": "openid-connect", "attributes": { "include.in.token.scope": "true" } }
+  ],
+  "clients": [
+    {
+      "clientId": "patient-service",
+      "secret": "patient-service-dev-secret",
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "defaultClientScopes": ["allergy:read"]
+    },
+    {
+      "clientId": "ref-data-admin",
+      "secret": "ref-data-admin-dev-secret",
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "defaultClientScopes": ["allergy:read", "allergy:write"]
+    }
+  ]
+}
