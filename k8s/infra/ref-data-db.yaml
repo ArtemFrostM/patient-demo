@@ -1,0 +1,73 @@
+# Headless Service: gives the StatefulSet stable DNS (ref-data-db, ref-data-db-0.ref-data-db)
+apiVersion: v1
+kind: Service
+metadata:
+  name: ref-data-db                 # DNS-ім'я, саме його використовує DB_URL
+  labels:
+    app: ref-data-db
+spec:
+  clusterIP: None                  # headless: без віртуального IP, DNS одразу вказує на под
+  selector:
+    app: ref-data-db                # ← має збігатися з labels пода
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ref-data-db
+spec:
+  serviceName: ref-data-db          # ← ім'я headless Service вище
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ref-data-db              # ← як у template.metadata.labels
+  template:
+    metadata:
+      labels:
+        app: ref-data-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine          # та сама версія, що в compose
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: ref_data
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD        # ← ось тут знадобився крок 3.4
+              valueFrom:
+                secretKeyRef:
+                  name: patient-demo-secrets
+                  key: DB_PASSWORD
+            - name: PGDATA                   # підпапка, а не корінь тому (див. нижче)
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data                     # ← ім'я з volumeClaimTemplates
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "ref_data"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+  volumeClaimTemplates:
+    - metadata:
+        name: data                           # PVC отримає ім'я data-ref-data-db-0
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+        # storageClassName не вказано → береться default (standard у kind)
