@@ -8,7 +8,7 @@
   "clients": [
     {
       "clientId": "patient-service",
-      "secret": "patient-service-dev-secret",
+      "secret": "${REF_DATA_CLIENT_SECRET}",
       "publicClient": false,
       "standardFlowEnabled": false,
       "serviceAccountsEnabled": true,
@@ -16,7 +16,7 @@
     },
     {
       "clientId": "ref-data-admin",
-      "secret": "ref-data-admin-dev-secret",
+      "secret": "${REF_DATA_ADMIN_CLIENT_SECRET}",
       "publicClient": false,
       "standardFlowEnabled": false,
       "serviceAccountsEnabled": true,

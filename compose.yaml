@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-patient_demo}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       # only local
       POSTGRES_INITDB_ARGS: "--data-checksums"
     ports:
@@ -40,10 +40,10 @@ services:
       SERVER_PORT: 8380
       DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-patient_demo}
       DB_USER: ${POSTGRES_USER:-postgres}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       REF_DATA_BASE_URL: http://ref-data-service:8381
       KEYCLOAK_TOKEN_URI: http://keycloak:8080/realms/patient-demo/protocol/openid-connect/token
-      REF_DATA_CLIENT_SECRET: ${REF_DATA_CLIENT_SECRET}
+      REF_DATA_CLIENT_SECRET: ${REF_DATA_CLIENT_SECRET:?set REF_DATA_CLIENT_SECRET in .env}
     ports:
       - "${APP_HOST_PORT:-8380}:8380"
     restart: on-failure
@@ -55,7 +55,7 @@ services:
     environment:
       POSTGRES_DB: ${REF_DATA_DB:-ref_data}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
     ports:
       - "${REF_DATA_DB_HOST_PORT:-5433}:5432"
     volumes:
@@ -78,7 +78,7 @@ services:
     environment:
       FLYWAY_URL: jdbc:postgresql://ref-data-db:5432/${REF_DATA_DB:-ref_data}
       FLYWAY_USER: ${POSTGRES_USER:-postgres}
-      FLYWAY_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      FLYWAY_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       FLYWAY_LOCATIONS: filesystem:/flyway/sql/migration,filesystem:/flyway/sql/seed
       FLYWAY_CONNECT_RETRIES: 10
     command: migrate
@@ -103,7 +103,7 @@ services:
       SERVER_PORT: 8381
       DB_URL: jdbc:postgresql://ref-data-db:5432/${REF_DATA_DB:-ref_data}
       DB_USER: ${POSTGRES_USER:-postgres}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       SPRING_FLYWAY_ENABLED: "false"
       JWK_SET_URI: http://keycloak:8080/realms/patient-demo/protocol/openid-connect/certs
     ports:
@@ -118,7 +118,11 @@ services:
     command: start-dev --import-realm
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?set KEYCLOAK_ADMIN_PASSWORD in .env}
+      # substituted into the "${...}" placeholders of the realm file on import; patient-service reads
+      # the same REF_DATA_CLIENT_SECRET, so the secret has a single source
+      REF_DATA_CLIENT_SECRET: ${REF_DATA_CLIENT_SECRET:?set REF_DATA_CLIENT_SECRET in .env}
+      REF_DATA_ADMIN_CLIENT_SECRET: ${REF_DATA_ADMIN_CLIENT_SECRET:?set REF_DATA_ADMIN_CLIENT_SECRET in .env}
     ports:
       - "${KEYCLOAK_HOST_PORT:-8180}:8080"
     volumes:
