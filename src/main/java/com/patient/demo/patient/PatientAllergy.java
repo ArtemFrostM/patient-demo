@@ -8,10 +8,15 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.domain.Persistable;
 
 import java.util.UUID;
 
@@ -20,7 +25,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Entity
 @Table(name = "patient_allergy")
-public class PatientAllergy extends AuditableEntity {
+public class PatientAllergy extends AuditableEntity implements Persistable<PatientAllergyId> {
 
     @EmbeddedId
     private PatientAllergyId id = new PatientAllergyId();
@@ -36,6 +41,11 @@ public class PatientAllergy extends AuditableEntity {
     @Column(name = "notes", length = 1000)
     private String notes;
 
+    @Transient
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private boolean newEntity = true;
+
     public PatientAllergy(Patient patient, UUID allergyId) {
         this.id = new PatientAllergyId(patient.getId(), allergyId);
         this.patient = patient;
@@ -43,5 +53,16 @@ public class PatientAllergy extends AuditableEntity {
 
     public UUID getAllergyId() {
         return id.getAllergyId();
+    }
+
+    @Override
+    public boolean isNew() {
+        return newEntity;
+    }
+
+    @PostLoad
+    @PostPersist
+    void markNotNew() {
+        this.newEntity = false;
     }
 }
