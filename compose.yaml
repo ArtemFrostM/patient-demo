@@ -47,6 +47,7 @@ services:
     ports:
       - "${APP_HOST_PORT:-8380}:8380"
     restart: on-failure
+    stop_grace_period: 30s
 
   # PostgreSQL for ref-data-service
   ref-data-db:
@@ -109,6 +110,7 @@ services:
     ports:
       - "${REF_DATA_APP_HOST_PORT:-8381}:8381"
     restart: on-failure
+    stop_grace_period: 30s
 
   # Keycloak: issues JWT tokens for service-to-service calls
   keycloak:
